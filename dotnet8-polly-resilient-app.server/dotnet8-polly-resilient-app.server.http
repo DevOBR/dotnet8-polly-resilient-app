@@ -1,0 +1,6 @@
+@dotnet8_polly_resilient_app.server_HostAddress = http://localhost:5197
+
+GET {{dotnet8_polly_resilient_app.server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
