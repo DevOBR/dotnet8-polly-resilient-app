@@ -8,5 +8,5 @@
 | Lib | Desc |
 | - | - |
 | Microsoft.Extensions.Hosting | Used to create the builder on console app|
-| Microsoft.Extensions.Http | Used to create http clints |
+| Microsoft.Extensions.Http | Used to create http clients |
 | Microsoft.Extensions.Http.Resilience | API for building and using HTTP resilience pipelines | 
