@@ -1,4 +1,9 @@
 # Polly 
+
+- [Content index](../README.md)
+- [AppBuilders](./AppBuilders.md)
+- [Libraries used in the sample](./UsedLibs.md)
+
 ## Creation using Pipeline - Specific pipeline
 
 We use  **ResiliancePipeline** to create an instance that will help use execute any (async, sync) or even something that returns void, and with the builder instance we can apply as many strategies as you needed
@@ -52,6 +57,26 @@ And the you could use the pipe for all your http calls.
 ```
 await httpInstancePipe.ExecutreAsync(
     async token => await httpClient.GetAsync("/some-path"), cancellationToken);
+```
+
+```mermaid
+mindmap
+  root((Polly))
+    Extensions
+        ::icon(fa fa-book)
+        Microsoft.Extensions.Http.Resilience
+            AddResilienceHandler
+            AddStandardResilienceHandler
+            AddStandardHedgingHandler
+        Microsoft.Extensions.Resilience
+    Strategies
+    ::icon(fa fa-cog)
+        Timeout
+        Retry
+        Circuit Breaker
+        Overal Timeout
+        Concurrent Limiter
+
 ```
 
 ## Http polly resilience libraries
@@ -110,6 +135,7 @@ builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
 });
 ```
 
+* **HttpCircuitBreakerStrategyOptions:** Inherit from CircuitBreakerStrategyOptions so this are pollyV8 options and tailor for http scenarios.
 * **SamplingDuration:** Time that is taken to evaluate
 * **FailureRatio:** Percentage of error occurred
 * **MinimumThroughput:** Minimum amount of errors
@@ -125,11 +151,59 @@ _**Explanation for the configuration above:** over the sampling duration of five
 
 ```builder.AddConcurrencyLimiter(100)```: This is used to prevent DDOS attacks we add rate limiting by limiting the amount of concurrent requests that can flow at any given point in time.
 
-### Implementation AddStandardResilienceHandler
+### Implementation AddStandardResilienceHandler()
 
-Automatically incorporate the previous five strategies, there are
+This implementation automatically incorporate the previous five strategies, there are some defaults that you can use as it is, unless you want to fine-tune the behavior, If you want to fine-tune the behavior you can call the method ```Configure(options => { })``` from ```AddStandardResilenceHandler()``` and change the options 
 
-Automatically incorporate the previous five strategies, there are some defaults that you can use as it is, unless you want to fine-tune the behavior, If you want to fine-tune the behavior you can call the method ```Configure(options => { })``` from ```AddStandardResilenceHandler()``` and change the options 
+Example:
+
+```
+.AddStandardResilienceHandler()
+    .Configure(options => 
+    {
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromMicroseconds(10);
+        
+        options.Retry.MaxRetryAttempts = 5;
+        options.Retry.Delay = TimeSpan.Zero;
+
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(5);
+        options.CircuitBreaker.MinimumThroughput = 5;
+        options.CircuitBreaker.FailureRatio = 0.9;
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(1);
+
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(1);
+    });
+```
+
+### Implementation AddStandardHedgingHandler()
+
+```AddStandardHedgingHandler()``` is normally use to rid off all slow requests by doing retries in parallel and it will used the first faster of them.
+
+This is recommended for important request that do not change the state of the server because you could get into corrupted data
+
+```
+.AddStandardHedgingHandler()
+    .Configure(options => 
+    {
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(10);
+        
+        options.Hedging.MaxHedgedAttempts = 5;
+        options.Hedging.Delay = TimeSpan.FromMilliseconds(50);
+
+        options.Endpoint.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(5);
+        options.Endpoint.CircuitBreaker.MinimumThroughput = 5;
+        options.Endpoint.CircuitBreaker.FailureRatio = 0.9;
+        options.Endpoint.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(5);
+
+        options.Endpoint.Timeout.Timeout = TimeSpan.FromSeconds(1);
+    });
+```
+
+#### Difference 
+
+Using Hedging the delay is used to define the amount of time to trigger a parallel request in case the current is taking more than the specified time.
+
+Also, if you want to set up the Circuit Breaker you’er going to need to add ```Endpoint``` word before.
 
 ### Other Extension
 

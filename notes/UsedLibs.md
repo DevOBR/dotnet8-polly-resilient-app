@@ -1,4 +1,7 @@
 # Used Libs
+- [Content index](../README.md)
+- [AppBuilders](./AppBuilders.md)
+- [Polly Extensions](./pollyNotes.md)
 
 ## Console app
 
