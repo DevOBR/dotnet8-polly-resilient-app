@@ -76,7 +76,7 @@ Once ```Microsoft.Extensions.Http.Resilience``` is added as package then you nee
 #### 1. Timeout for long request
 ```builder.AddTimeout(TimeSpan.FromSeconds(1))```: Limit the latency of requests, to reject long requests to preserve client and server resources. This configuration says that I don't want my requests take longer than 1 second, this throw a timeout exception
 
-#### 2. Retry unsuccesful requests
+#### 2. Retry unsuccessful requests
 
 ```
 builder.AddRetry(new HttpRetryStrategyOptions
@@ -97,3 +97,25 @@ builder.AddRetry(new HttpRetryStrategyOptions
 AddResilienceHandler
 
 ```Microsoft.Extensions.Resilience``` is a thin library that enriches the built-in Telemetry of poly
+
+
+#### 3. Circuit breaker
+
+Circuit breaker is able to detect outage in the remote service and is able to suspend all your communication to that endpoint and re-establish the communication. For a period of time it can try again and see if the issue is resolved. If you want to fine-tune your circuit breaker you need to understand the next concepts.
+
+``` 
+builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions 
+{
+    SamplingDuration = TimeSpan.FromSeconds(5),
+    FailureRatio = 0.9,
+    MinimumThroughput = 5,
+    BreakDuration = TimeSpan.FromSeconds(5)
+});
+```
+
+* **SamplingDuration:** Time that is taken to evaluate
+* **FailureRatio:** Percentage of error occurred
+* **MinimumThroughput:** Minimum amount of errors
+* **BreakDuration:** Circuit Breaker duration
+
+_**Explanation for the configuration above:** over the sampling duration of five seconds if you have a minimum throughput of requests of 5, and 90% of those requests are no successful then the circuit breaker will open (open circuit breaker means that there is no communication flowing out of the http client), and that circuit breaker will be open for a duration of 5 seconds, after that 5 seconds, circuit breaker will allow us 1 single request that is called probing request and if that request is successful then the circuit breaker is closed and the communication can flow again._

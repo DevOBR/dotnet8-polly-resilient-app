@@ -20,6 +20,13 @@ services.AddHttpClient("weather", client => client.BaseAddress = new Uri("http:/
             UseJitter = true,
             Delay = TimeSpan.Zero
         });
+        builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions 
+        {
+            SamplingDuration = TimeSpan.FromSeconds(5),
+            FailureRatio = 0.9,
+            MinimumThroughput = 5,
+            BreakDuration = TimeSpan.FromSeconds(5)
+        });
         builder.AddTimeout(TimeSpan.FromSeconds(1));
     });
 
