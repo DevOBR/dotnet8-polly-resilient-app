@@ -62,7 +62,7 @@ await httpInstancePipe.ExecutreAsync(
 - Standrard pipelines
 - Standar hedging pipeline
 
-### Implementation 
+### Implementation AddResilienceHandler
 
 Once ```Microsoft.Extensions.Http.Resilience``` is added as package then you need to call the method extension ```AddResilienceHandler``` after you call ```AddHttpClient``` method.
 
@@ -94,9 +94,6 @@ builder.AddRetry(new HttpRetryStrategyOptions
 * **UseJitter:** Introduce randomness into retry intervals, it helps prevent multiple concurrent operations from synchronizing their retries, which can occur if all operations encounter the same transient fault and retry at the same time.
 * **Delay:** Change base delay that we use for the retries
 
-AddResilienceHandler
-
-```Microsoft.Extensions.Resilience``` is a thin library that enriches the built-in Telemetry of poly
 
 
 #### 3. Circuit breaker
@@ -119,3 +116,21 @@ builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
 * **BreakDuration:** Circuit Breaker duration
 
 _**Explanation for the configuration above:** over the sampling duration of five seconds if you have a minimum throughput of requests of 5, and 90% of those requests are no successful then the circuit breaker will open (open circuit breaker means that there is no communication flowing out of the http client), and that circuit breaker will be open for a duration of 5 seconds, after that 5 seconds, circuit breaker will allow us 1 single request that is called probing request and if that request is successful then the circuit breaker is closed and the communication can flow again._
+
+#### 4. Overal Timeout 
+
+```builder.AddTimeout(TimeSpan.FromSeconds(5))```: This timeout applies across all the attempts, including all the attempts we don't want our request take more than 1 specific time.
+
+#### 5. Concurrent Limiter
+
+```builder.AddConcurrencyLimiter(100)```: This is used to prevent DDOS attacks we add rate limiting by limiting the amount of concurrent requests that can flow at any given point in time.
+
+### Implementation AddStandardResilienceHandler
+
+Automatically incorporate the previous five strategies, there are
+
+Automatically incorporate the previous five strategies, there are some defaults that you can use as it is, unless you want to fine-tune the behavior, If you want to fine-tune the behavior you can call the method ```Configure(options => { })``` from ```AddStandardResilenceHandler()``` and change the options 
+
+### Other Extension
+
+```Microsoft.Extensions.Resilience``` is a thin library that enriches the built-in Telemetry of poly
