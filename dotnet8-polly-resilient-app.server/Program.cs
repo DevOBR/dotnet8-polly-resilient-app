@@ -21,8 +21,18 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", async () =>
+app.MapGet("/weatherforecast", async (CancellationToken cancellationToken) =>
 {
+    if (Random.Shared.NextDouble() < 0.2)
+    {
+        await Task.Delay(5000, cancellationToken);
+    }
+
+    if (Random.Shared.NextDouble() < 0.3) 
+    {
+        throw new InvalidOperationException("Something went wrong.");
+    }
+
     var forecast =  Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (

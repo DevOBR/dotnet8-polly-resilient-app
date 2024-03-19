@@ -2,13 +2,26 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
+using Polly;
 using static System.Console;
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Logging.ClearProviders();
 
 IServiceCollection services = builder.Services;
-services.AddHttpClient("weather", client => client.BaseAddress = new Uri("http://localhost:5197"));
+services.AddHttpClient("weather", client => client.BaseAddress = new Uri("http://localhost:5197"))
+    .AddResilienceHandler("demo", builder => 
+    {
+        builder.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 5,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            Delay = TimeSpan.Zero
+        });
+        builder.AddTimeout(TimeSpan.FromSeconds(1));
+    });
 
 
 // Getting Services
@@ -24,17 +37,37 @@ while(true)
 
     await BatchAsync(async () => 
     {
+        var watch = Stopwatch.StartNew();
         try 
         {
             var response = await httpClient.GetAsync("/weatherforecast");
+            var statusCode = (int)response.StatusCode;
+
+            if (statusCode is 500)
+            {
+                WriteRedLine($"{(int)response.StatusCode}: {watch.Elapsed.TotalMilliseconds,10:0.00},ms");
+            }
+
             WriteLine($"{(int)response.StatusCode}: {watch.Elapsed.TotalMilliseconds,10:0.00},ms");
         }
         catch(Exception ex) 
         {  
-            WriteLine($"Err: {watch.Elapsed.TotalMilliseconds, 10:0.00}ms ({ex.GetType().Name})");
+            WriteRedLine($"Err: {watch.Elapsed.TotalMilliseconds, 10:0.00}ms ({ex.GetType().Name})");
+        }
+        finally
+        {
+            watch.Stop();    
         }
     });
     
+}
+
+
+void WriteRedLine(string message) 
+{
+    ForegroundColor = ConsoleColor.Red;
+    WriteLine(message);
+    ResetColor();
 }
 
 async Task BatchAsync(Func<Task> callback) 

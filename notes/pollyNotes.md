@@ -62,5 +62,38 @@ await httpInstancePipe.ExecutreAsync(
 - Standrard pipelines
 - Standar hedging pipeline
 
-```Microsoft.Extensions.Resilience``` is a thin library that enriches the built-in Telemetry of poly
+### Implementation 
 
+Once ```Microsoft.Extensions.Http.Resilience``` is added as package then you need to call the method extension ```AddResilienceHandler``` after you call ```AddHttpClient``` method.
+
+```AddResilienceHandler``` recieves 2 parameters
+
+* String identifier used for telemetry purpose 
+* A callback to configure your strategies
+
+### Strategies configuration
+
+#### 1. Timeout for long request
+```builder.AddTimeout(TimeSpan.FromSeconds(1))```: Limit the latency of requests, to reject long requests to preserve client and server resources. This configuration says that I don't want my requests take longer than 1 second, this throw a timeout exception
+
+#### 2. Retry unsuccesful requests
+
+```
+builder.AddRetry(new HttpRetryStrategyOptions
+{
+    MaxRetryAttempts = 5,
+    BackoffType = DelayBackoffType.Exponential, 
+    UseJitter = true, 
+    Delay = TimeSpan.Zero
+});
+```
+
+* **HttpRetryStrategyOptions:** Inherit from RetryStrategyOptions so this are pollyV8 options and tailor for http scenarios.
+* **MaxRetryAttempts:** How many retries we want to do.
+* **BackoffType:** Strategy waits between the retries. 
+* **UseJitter:** Introduce randomness into retry intervals, it helps prevent multiple concurrent operations from synchronizing their retries, which can occur if all operations encounter the same transient fault and retry at the same time.
+* **Delay:** Change base delay that we use for the retries
+
+AddResilienceHandler
+
+```Microsoft.Extensions.Resilience``` is a thin library that enriches the built-in Telemetry of poly
